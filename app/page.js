@@ -5,8 +5,10 @@ import TodoList from "@/components/TodoList";
 import TodoForm from "@/components/TodoForm";
 import { useTheme } from "next-themes";
 import { MoonIcon, SunIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   const [todos, setTodos] = useState([]);
   const { theme = "dark", setTheme } = useTheme();
 
@@ -14,21 +16,14 @@ export default function Home() {
     fetchTodos();
   }, []);
 
- const fetchTodos = async () => {
-    try {
-      const response = await fetch("/api/todos");
-      const todosData = await response.json();
-      
-      // Only reverse and set if the database actually returned an array
-      if (response.ok && Array.isArray(todosData)) {
-        setTodos(todosData.reverse());
-      } else {
-        console.error("Server returned an error:", todosData);
-        setTodos([]); // Fallback to an empty list so the UI doesn't crash
-      }
-    } catch (error) {
-      console.error("Network error:", error);
-      setTodos([]);
+  const fetchTodos = async () => {
+    const response = await fetch("/api/todos");
+    const data = await response.json();
+    if (response.status === 401) {
+      return router.push("/login");
+    }
+    if (!data.error) {
+      setTodos(data.reverse());
     }
   };
 

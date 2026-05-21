@@ -1,40 +1,59 @@
-import { NextResponse } from "next/server";
 import connectDB from "@/lib/connectDB";
-import Todo from "@/models/Todo";
+import Todo from "@/models/todoModel";
+import User from "@/models/userModel";
+import { cookies } from "next/headers";
 
-export async function GET() {
-  try {
-    await connectDB();
-    const todos = await Todo.find({});
-    
-    const formattedTodos = todos.map(todo => ({
-      id: todo._id.toString(),
-      // This line protects against the old 'title' data you had in Compass
-      text: todo.text || todo.title || "Untitled Task", 
-      completed: todo.completed || false
-    }));
+export async function GET(request) {
+  await connectDB();
+  const cookieStore = await cookies();
 
-    return NextResponse.json(formattedTodos);
-  } catch (error) {
-    // WE CHANGED THIS LINE: It now sends the EXACT error to your browser
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const userId = cookieStore.get("userId")?.value;
+  console.log({ userId });
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return Response.json(
+      { error: "Please login" },
+      {
+        status: 401,
+      }
+    );
   }
+
+  const allTodos = await Todo.find({ userId });
+
+  return Response.json(
+    allTodos.map(({ id, text, completed }) => ({ id, text, completed }))
+  );
 }
 
-export async function POST(req) {
-  try {
-    await connectDB();
-    const { text } = await req.json();
-    
-    const newTodo = await Todo.create({ text });
-    
-    return NextResponse.json({
-      id: newTodo._id.toString(),
-      text: newTodo.text,
-      completed: newTodo.completed
-    }, { status: 201 });
-  } catch (error) {
-    // WE CHANGED THIS LINE TOO
-    return NextResponse.json({ error: error.message }, { status: 500 });
+export async function POST(request) {
+  await connectDB();
+  const cookieStore = await cookies();
+
+  const userId = cookieStore.get("userId")?.value;
+  console.log({ userId });
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return Response.json(
+      { error: "Please login" },
+      {
+        status: 401,
+      }
+    );
   }
+
+  const todo = await request.json();
+  const { id, text, completed } = await Todo.create({
+    text: todo.text,
+    userId,
+  });
+
+  return Response.json(
+    { id, text, completed },
+    {
+      status: 201,
+    }
+  );
 }
