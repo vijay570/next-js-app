@@ -13,7 +13,7 @@ export async function POST(request) {
       email,
       password: hashedPassword,
     });
-    return Response.json(newUser, {
+    return Response.json({ name, email },  {
       status: 201,
     });
   } catch (err) {
