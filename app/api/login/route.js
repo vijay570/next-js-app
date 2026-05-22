@@ -4,7 +4,7 @@ import connectDB from "@/lib/connectDB";
 import Session from "@/models/sessionModel";
 import User from "@/models/userModel";
 import { cookies } from "next/headers";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export async function POST(request) {
   try {
