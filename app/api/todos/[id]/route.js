@@ -1,38 +1,58 @@
+import connectDB from "@/lib/connectDB";
 import Todo from "@/models/todoModel";
-import   connectDB from "@/lib/connectDB";
+import { getLoggedInUser } from "@/lib/auth";
 
 export async function GET(_, { params }) {
-  await connectDB();
+  try {
+    await connectDB();
+    const result = await getLoggedInUser();
+    if (result instanceof Response) return result;
 
-  const { id } = await params;
-  const todo = await Todo.findById(id);
-  if (!todo) {
-    return Response.json(
-      { error: "Todo not found" },
-      {
-        status: 404,
-      }
-    );
+    const { id } = await params;
+    const todo = await Todo.findOne({ _id: id, userId: result._id });
+
+    if (!todo) return Response.json({ error: "Todo not found" }, { status: 404 });
+    return Response.json(todo);
+  } catch (err) {
+    console.error("GET /api/todos/[id] ERROR:", err);
+    return Response.json({ error: "Something went wrong" }, { status: 500 });
   }
-  return Response.json(todo);
 }
 
 export async function PUT(request, { params }) {
-  await connectDB();
-  const editTodoData = await request.json();
-  const { id } = await params;
-  const editedTodo = await Todo.findByIdAndUpdate(id, editTodoData, {
-    new: true,
-  });
+  try {
+    await connectDB();
+    const result = await getLoggedInUser();
+    if (result instanceof Response) return result;
 
-  return Response.json(editedTodo);
+    const { id } = await params;
+    const editTodoData = await request.json();
+    const editedTodo = await Todo.findOneAndUpdate(
+      { _id: id, userId: result._id },
+      editTodoData,
+      { new: true }
+    );
+
+    if (!editedTodo) return Response.json({ error: "Todo not found" }, { status: 404 });
+    return Response.json(editedTodo);
+  } catch (err) {
+    console.error("PUT /api/todos/[id] ERROR:", err);
+    return Response.json({ error: "Something went wrong" }, { status: 500 });
+  }
 }
 
 export async function DELETE(_, { params }) {
-  await connectDB();
-  const { id } = await params;
-  await Todo.findByIdAndDelete(id);
-  return new Response(null, {
-    status: 204,
-  });
+  try {
+    await connectDB();
+    const result = await getLoggedInUser();
+    if (result instanceof Response) return result;
+
+    const { id } = await params;
+    await Todo.findOneAndDelete({ _id: id, userId: result._id });
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    console.error("DELETE /api/todos/[id] ERROR:", err);
+    return Response.json({ error: "Something went wrong" }, { status: 500 });
+  }
 }

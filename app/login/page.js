@@ -11,8 +11,11 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const response = await fetch("/api/login", {
+  const response = await fetch("/api/login", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json", // YOU MUST ADD THIS LINE
+      },
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
